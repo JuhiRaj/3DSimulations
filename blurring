@@ -1,0 +1,207 @@
+from tifffile.tifffile import astype
+from numpy.lib.npyio import NpzFile
+from re import A
+from numpy.core.memmap import dtype
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+from torchvision.utils import save_image
+from scipy import signal
+import torch
+import torch.nn as nn
+from PIL import Image
+import gc
+import math
+import cv2
+import random
+from scipy import integrate
+import shutil
+from matplotlib import cm
+from google.colab import drive
+drive.mount('/content/gdrive')
+from numpy.random import default_rng
+
+np.set_printoptions(threshold=np.inf)
+
+
+if not os.path.exists(path):
+    os.makedirs(path)
+else:
+    shutil.rmtree(path)           
+    os.makedirs(path)
+os.mkdir(path + 'label/')
+os.mkdir(path + 'image/')
+
+
+path_label = "/content/gdrive/MyDrive/PointSource_3D/label/"
+path_image = "/content/gdrive/MyDrive/PointSource_3D/image/"
+N = 1
+for n in range(N):
+  y = np.linspace(-110.5, 110.5, 221)
+  z = np.linspace(-50.5, 50.5, 101)
+  x = np.linspace(-110.5, 110.5, 221)
+  xv, yv, zv = np.meshgrid(x, y, z)
+
+  radius = np.random.randint(20, 60)
+  rand_l = 100 #No. of lesions  
+  f = 0.
+  f_check_blur = 0. 
+  for i in range(rand_l):
+    randx = np.random.randint(-95, 95)
+    #randx = i
+    randy = np.random.randint(-95, 95)
+    #randy = -100
+    randz = np.random.randint(-45, 45)
+    #randz = 0
+    level = np.random.randint(5, 50)
+    f_check = (((xv+randx)**2 + (yv+randy)**2 + (zv+randz)**2 < radius).astype(np.int16))
+    f = level*(f + f_check)
+    #print(level)
+    #Position based convolution of the kernels with the point source. (Lower half of the Image)
+    if randy in range(-111, -95):
+      kernel_toconv = np.reshape(list_kernels1[6], (21,21,21), order='C')
+      plt.imshow(kernel_toconv[:,:,0])
+      plt.title('Kernel 6 first')
+      plt.show()
+
+      plt.imshow(kernel_toconv[:,:,10])
+      plt.title('Kernel 6 first')
+      plt.show()
+
+      plt.imshow(kernel_toconv[:,:,20])
+      plt.title('Kernel 6 first')
+      plt.show()
+  
+      f_check_blur = signal.fftconvolve(f, kernel_toconv, mode = 'same')
+    elif randy in range(-95, -79):
+      kernel_toconv = np.reshape(list_kernels1[5], (21,21,21), order='C') 
+      f_check_blur = signal.fftconvolve(f, kernel_toconv, mode = 'same')
+    elif randy in range(-79, -63):
+      kernel_toconv = np.reshape(list_kernels1[4], (21,21,21), order='C') 
+      f_check_blur = signal.fftconvolve(f, kernel_toconv, mode = 'same')
+    elif randy in range(-63, -47):
+      kernel_toconv = np.reshape(list_kernels1[3], (21,21,21), order='C')
+      f_check_blur = signal.fftconvolve(f, kernel_toconv, mode = 'same')
+    elif randy in range(-47, -31):
+      kernel_toconv = np.reshape(list_kernels1[2], (21,21,21), order='C') 
+      f_check_blur = signal.fftconvolve(f, kernel_toconv, mode = 'same')
+    elif randy in range(-31, -15):
+      kernel_toconv = np.reshape(list_kernels1[1], (21,21,21), order='C')
+      f_check_blur = signal.fftconvolve(f, kernel_toconv, mode = 'same')
+    elif randy in range(-15, 0):
+      kernel_toconv = np.reshape(list_kernels1[0], (21,21,21), order='C')
+      plt.imshow(kernel_toconv[:,:,0])
+      plt.title('Kernel 0 first')
+      plt.show()
+
+      plt.imshow(kernel_toconv[:,:,10])
+      plt.title('Kernel 0 first')
+      plt.show()
+
+      plt.imshow(kernel_toconv[:,:,20])
+      plt.title('Kernel 0 first')
+      plt.show()
+  
+      f_check_blur = signal.fftconvolve(f, kernel_toconv, mode = 'same')
+
+    elif randy in range(0, 15):
+      kernel_toconv = np.reshape(list_kernels2[0], (21,21,21), order='C')
+      plt.imshow(kernel_toconv[:,:,0])
+      plt.title('Kernel 0 Second')
+      plt.show()
+
+      plt.imshow(kernel_toconv[:,:,10])
+      plt.title('Kernel 0 Second')
+      plt.show()
+
+      plt.imshow(kernel_toconv[:,:,20])
+      plt.title('Kernel 0 Second')
+      plt.show() 
+      f_check_blur = signal.fftconvolve(f, kernel_toconv, mode = 'same')
+    elif randy in range(15, 31):
+      kernel_toconv = np.reshape(list_kernels2[1], (21,21,21), order='C')  
+      f_check_blur = signal.fftconvolve(f, kernel_toconv, mode = 'same')
+    elif randy in range(31, 47):
+      kernel_toconv = np.reshape(list_kernels2[2], (21,21,21), order='C') 
+      f_check_blur = signal.fftconvolve(f, kernel_toconv, mode = 'same')
+    elif randy in range(47, 63):
+      kernel_toconv = np.reshape(list_kernels2[3], (21,21,21), order='C')  
+      f_check_blur = signal.fftconvolve(f, kernel_toconv, mode = 'same')
+    elif randy in range(63, 79):
+      kernel_toconv = np.reshape(list_kernels2[4], (21,21,21), order='C') 
+      f_check_blur = signal.fftconvolve(f, kernel_toconv, mode = 'same')
+    elif randy in range(79, 95):
+      kernel_toconv = np.reshape(list_kernels2[5], (21,21,21), order='C') 
+      plt.imshow(kernel_toconv[:,:,0])
+      plt.title('Kernel 6 Second')
+      plt.show()
+
+      plt.imshow(kernel_toconv[:,:,10])
+      plt.title('Kernel 6 Second')
+      plt.show()
+
+      plt.imshow(kernel_toconv[:,:,20])
+      plt.title('Kernel 6 Second')
+      plt.show() 
+      f_check_blur = signal.fftconvolve(f, kernel_toconv, mode = 'same')
+    elif randy in range(95, 111):
+      kernel_toconv = np.reshape(list_kernels2[6], (21,21,21), order='C') 
+      f_check_blur = signal.fftconvolve(f, kernel_toconv, mode = 'same')
+
+
+  f.tofile(path_label+str(n)+'.i')
+  f_check_blur.tofile(path_image+str(n)+'.i')
+
+  print("Label")
+  print(np.sum(f))
+  print("Image")
+  print(np.sum(f_check_blur))
+  plt.figure(figsize=(6,4))
+  plt.subplot(121)
+  plt.imshow(f[50,:,:], cmap='gray')
+  plt.title('Train Label')
+  plt.subplot(122)
+  plt.imshow(f_check_blur[50,:,:], cmap='gray')
+  plt.title('Train Image')
+  plt.show()
+  plt.figure(figsize=(6,4))
+  plt.subplot(121)
+  plt.imshow(f[:,110,:], cmap='gray')
+  plt.title('Train Label')
+  plt.subplot(122)
+  plt.imshow(f_check_blur[:,110,:], cmap='gray')
+  plt.title('Train Image')
+  plt.show()
+  plt.figure(figsize=(6,4))
+  plt.subplot(121)
+  plt.imshow(f[:,:,50], cmap='gray')
+  plt.title('Train Label')
+  plt.subplot(122)
+  plt.imshow(f_check_blur[:,:,50], cmap='gray')
+  plt.title('Train Image')
+  plt.show()
+
+  plt.figure(figsize=(6,4))
+  plt.subplot(121)
+  plt.imshow(f[:,:,5], cmap='gray')
+  plt.title('Train Label')
+  plt.subplot(122)
+  plt.imshow(f_check_blur[:,:,5], cmap='gray')
+  plt.title('Train Image')
+  plt.show()
+  plt.figure(figsize=(6,4))
+  plt.subplot(121)
+  plt.imshow(f[:,:,50], cmap='gray')
+  plt.title('Train Label')
+  plt.subplot(122)
+  plt.imshow(f_check_blur[:,:,50], cmap='gray')
+  plt.title('Train Image')
+  plt.show()
+  plt.figure(figsize=(6,4))
+  plt.subplot(121)
+  plt.imshow(f[:,:,100], cmap='gray')
+  plt.title('Train Label')
+  plt.subplot(122)
+  plt.imshow(f_check_blur[:,:,100], cmap='gray')
+  plt.title('Train Image')
+  plt.show()

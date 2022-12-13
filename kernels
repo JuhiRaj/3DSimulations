@@ -1,0 +1,142 @@
+import os
+import random
+import torch
+import torch.nn as nn
+import numpy as np
+import matplotlib.pyplot as plt
+from PIL import Image
+import gc
+import math
+import cv2
+from scipy import integrate
+import shutil
+from google.colab import drive
+drive.mount('/content/gdrive')
+from numpy import pi, exp, sqrt
+import matplotlib.pylab as plt
+from matplotlib import pyplot as plt
+from skimage.measure import profile_line
+from skimage.io import imread
+
+path = "/content/gdrive/MyDrive/PointSource_3D/"
+
+list_sigma1 = [2.05, 2.79, 4.27, 5.68, 7.48, 8.07, 8.67] #Sigma 1 List
+list_shift_1 = [0., -4.35, -3.28, -2.03, -0.67, -0.41, -0.28] #Shift 1 List
+
+list_sigma2 = [7.03, 6.29, 5.31, 4.28, 3.06, 2.68, 2.84] #Sigma 2 List
+list_shift_2 = [0., 0.69, 1.62, 2.69, 3.61, 4.08, 4.49] #Shift 2 List
+
+ratio = [0.0222, 0.079, 0.2349, 0.4403, 0.6594, 0.6731, 0.6694] #Ratio
+
+list_kernels1 = []
+list_kernels2 = []
+
+for i in range(7):
+  tof1, shift1, lor1, lorz_1, k1 = list_sigma1[i]/2.355, list_shift_1[i], 1.5/2.355, 1.8/2.355, 10
+  tof2, shift2, lor2, lorz_2, k2 = list_sigma2[i]/2.355, list_shift_2[i], 1.5/2.355, 1.8/2.355, 10
+  probs1 = [exp((-((y-shift1)**2))/(2*tof1*tof1))/sqrt(2*pi*tof1*tof1) for y in range(-k1,k1+1)] 
+  probs2 = [exp(-x*x/(2*lor1*lor1))/sqrt(2*pi*lor1*lor1) for x in range(-k1,k1+1)]
+  probs3 = [exp(-z*z/(2*lorz_1*lorz_1))/sqrt(2*pi*lorz_1*lorz_1) for z in range(-k1,k1+1)]
+
+  print("probs1:",np.size(probs1)) 
+  print("probs2:",np.size(probs2))
+  print("probs3:",np.size(probs3))
+  print('type(probs1). ',type(probs1))
+  len_ = np.size(probs1)
+  kernel1 = np.zeros((len_,len_,len_))
+
+  for m in range(len_):
+    for n in range(len_):
+      for o in range(len_):
+        kernel1[m,n,o] = probs1[m]*probs2[n]*probs3[o]
+
+  probs4 = [exp((-((y-shift2)**2))/(2*tof2*tof2))/sqrt(2*pi*tof2*tof2) for y in range(-k2,k2+1)] 
+  probs5 = [exp(-x*x/(2*lor2*lor2))/sqrt(2*pi*lor2*lor2) for x in range(-k2,k2+1)] 
+  probs6 = [exp(-z*z/(2*lorz_2*lorz_2))/sqrt(2*pi*lorz_2*lorz_2) for z in range(-k2,k2+1)] 
+
+  print("probs4:",np.size(probs4))
+  print("probs5:",np.size(probs5))
+  print("probs6:",np.size(probs6))
+  kernel2 = np.zeros((len_,len_,len_))
+  
+  for m in range(len_):
+    for n in range(len_):
+      for o in range(len_):
+        kernel2[m,n,o] = probs4[m]*probs5[n]*probs6[o]
+  
+  print("Ratio:", ratio[i])
+  kernel_first = (ratio[i]*kernel1) +  ((1-ratio[i])*kernel2)
+
+  plt.imshow(kernel_first[:,:,0])
+  plt.title('Kernel')
+  plt.show()
+
+  plt.imshow(kernel_first[:,:,10])
+  plt.title('Kernel')
+  plt.show()
+
+  plt.imshow(kernel_first[:,:,20])
+  plt.title('Kernel')
+  plt.show()
+  
+  print("kernel sum:",np.sum(kernel_first))
+
+  flat_ker1 = kernel_first.flatten()
+  list_kernels1.append(flat_ker1)
+
+
+
+
+
+for i in range(7):
+  tof1, shift1, lor1, lorz_1, k1 = list_sigma1[i]/2.355, list_shift_1[i], 1.5/2.355, 1.8/2.355, 10
+  tof2, shift2, lor2, lorz_2, k2 = list_sigma2[i]/2.355, list_shift_2[i], 1.5/2.355, 1.8/2.355, 10
+  probs1 = [exp((-((y+shift1)**2))/(2*tof1*tof1))/sqrt(2*pi*tof1*tof1) for y in range(-k1,k1+1)] 
+  probs2 = [exp(-x*x/(2*lor1*lor1))/sqrt(2*pi*lor1*lor1) for x in range(-k1,k1+1)]
+  probs3 = [exp(-z*z/(2*lorz_1*lorz_1))/sqrt(2*pi*lorz_1*lorz_1) for z in range(-k1,k1+1)]
+
+  print("probs1:",np.size(probs1)) 
+  print("probs2:",np.size(probs2))
+  print("probs3:",np.size(probs3))
+  print('type(probs1). ',type(probs1))
+  len_ = np.size(probs1)
+  kernel1 = np.zeros((len_,len_,len_))
+
+  for m in range(len_):
+    for n in range(len_):
+      for o in range(len_):
+        kernel1[m,n,o] = probs1[m]*probs2[n]*probs3[o]
+
+  probs4 = [exp((-((y+shift2)**2))/(2*tof2*tof2))/sqrt(2*pi*tof2*tof2) for y in range(-k2,k2+1)] 
+  probs5 = [exp(-x*x/(2*lor2*lor2))/sqrt(2*pi*lor2*lor2) for x in range(-k2,k2+1)] 
+  probs6 = [exp(-z*z/(2*lorz_2*lorz_2))/sqrt(2*pi*lorz_2*lorz_2) for z in range(-k2,k2+1)] 
+
+  print("probs4:",np.size(probs4))
+  print("probs5:",np.size(probs5))
+  print("probs6:",np.size(probs6))
+  kernel2 = np.zeros((len_,len_,len_))
+  
+  for m in range(len_):
+    for n in range(len_):
+      for o in range(len_):
+        kernel2[m,n,o] = probs4[m]*probs5[n]*probs6[o]
+  
+  print("Ratio:", ratio[i])
+  kernel_second = (ratio[i]*kernel1) +  ((1-ratio[i])*kernel2)
+
+  plt.imshow(kernel_second[:,:,0])
+  plt.title('Kernel')
+  plt.show()
+
+  plt.imshow(kernel_second[:,:,10])
+  plt.title('Kernel')
+  plt.show()
+
+  plt.imshow(kernel_second[:,:,20])
+  plt.title('Kernel')
+  plt.show()
+  
+
+  print("kernel sum:",np.sum(kernel_second))
+  flat_ker2 = kernel_second.flatten()
+  list_kernels2.append(flat_ker2)
